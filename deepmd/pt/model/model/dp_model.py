@@ -2,6 +2,9 @@
 from deepmd.pt.model.descriptor.base_descriptor import (
     BaseDescriptor,
 )
+from deepmd.pt.model.atomic_model import (
+    DPAtomicModel,
+)
 from typing import (
     Optional,
 )
