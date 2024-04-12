@@ -2,6 +2,25 @@
 from deepmd.pt.model.descriptor.base_descriptor import (
     BaseDescriptor,
 )
+from typing import (
+    Optional,
+)
+from deepmd.pt.model.model.model import (
+    BaseModel,
+)
+from deepmd.pt.model.task.dipole import (
+    DipoleFittingNet,
+)
+from deepmd.pt.model.task.dos import (
+    DOSFittingNet,
+)
+from deepmd.pt.model.task.ener import (
+    EnergyFittingNet,
+    EnergyFittingNetDirect,
+)
+from deepmd.pt.model.task.polarizability import (
+    PolarFittingNet,
+)
 
 @BaseModel.register("standard")
 class DPModel:
