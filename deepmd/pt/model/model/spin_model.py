@@ -8,9 +8,6 @@ from typing import (
 
 import torch
 
-from deepmd.pt.model.atomic_model import (
-    DPAtomicModel,
-)
 from deepmd.pt.utils.utils import (
     to_torch_tensor,
 )
@@ -21,8 +18,8 @@ from deepmd.utils.spin import (
     Spin,
 )
 
-from .make_model import (
-    make_model,
+from .dp_model import (
+    DPModel,
 )
 
 
@@ -477,7 +474,7 @@ class SpinModel(torch.nn.Module):
 
     @classmethod
     def deserialize(cls, data) -> "SpinModel":
-        backbone_model_obj = make_model(DPAtomicModel).deserialize(
+        backbone_model_obj = DPModel.deserialize(
             data["backbone_model"]
         )
         spin = Spin.deserialize(data["spin"])

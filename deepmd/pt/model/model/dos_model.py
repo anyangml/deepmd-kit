@@ -14,15 +14,15 @@ from deepmd.pt.model.model.model import (
 )
 
 from .dp_model import (
-    DPModelCommon,
+    DPModel,
 )
 from .make_model import (
     make_model,
 )
 
 
-@BaseModel.register("dos")
-class DOSModel(DPModelCommon, make_model(DPDOSAtomicModel)):
+@BaseModel.register("standard")
+class DOSModel(DPModel, make_model(DPDOSAtomicModel)):
     model_type = "dos"
 
     def __init__(
