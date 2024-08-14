@@ -29,6 +29,7 @@ from deepmd.pt.loss import (
     EnergySpinLoss,
     EnergyStdLoss,
     TensorLoss,
+    HydraEnergyStdLoss,
 )
 from deepmd.pt.model.model import (
     get_model,
@@ -1221,6 +1222,9 @@ def get_loss(loss_params, start_lr, _ntypes, _model):
     if loss_type == "ener":
         loss_params["starter_learning_rate"] = start_lr
         return EnergyStdLoss(**loss_params)
+    elif loss_type == "hydra_ener":
+        loss_params["starter_learning_rate"] = start_lr
+        return HydraEnergyStdLoss(**loss_params)
     elif loss_type == "dos":
         loss_params["starter_learning_rate"] = start_lr
         loss_params["numb_dos"] = _model.model_output_def()["dos"].output_size

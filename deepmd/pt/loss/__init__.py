@@ -8,6 +8,9 @@ from .dos import (
 from .ener import (
     EnergyStdLoss,
 )
+from .hydra_ener import (
+    HydraEnergyStdLoss,
+)
 from .ener_spin import (
     EnergySpinLoss,
 )
@@ -25,4 +28,5 @@ __all__ = [
     "TensorLoss",
     "TaskLoss",
     "DOSLoss",
+    "HydraEnergyStdLoss"
 ]
