@@ -121,7 +121,12 @@ class SpinModel(torch.nn.Module):
         out_real, out_mag = torch.split(out_tensor, [nloc, nloc], dim=1)
         if add_mag:
             out_real = out_real + out_mag
-        out_mag = (out_mag.view([nframes, nloc, -1]) * atomic_mask).view(out_mag.shape)
+        shape2 = 1
+        for ss in out_real.shape[2:]:
+            shape2 *= ss
+        out_mag = (out_mag.view([nframes, nloc, shape2]) * atomic_mask).view(
+            out_mag.shape
+        )
         return out_real, out_mag, atomic_mask > 0.0
 
     def process_spin_output_lower(
@@ -162,8 +167,11 @@ class SpinModel(torch.nn.Module):
         )
         if add_mag:
             extended_out_real = extended_out_real + extended_out_mag
+        shape2 = 1
+        for ss in extended_out_tensor.shape[2:]:
+            shape2 *= ss
         extended_out_mag = (
-            extended_out_mag.view([nframes, nall, -1]) * atomic_mask
+            extended_out_mag.view([nframes, nall, shape2]) * atomic_mask
         ).view(extended_out_mag.shape)
         return extended_out_real, extended_out_mag, atomic_mask > 0.0
 
@@ -334,6 +342,10 @@ class SpinModel(torch.nn.Module):
         """Returns whether the model has message passing."""
         return self.backbone_model.has_message_passing()
 
+    def need_sorted_nlist_for_lower(self) -> bool:
+        """Returns whether the model needs sorted nlist when using `forward_lower`."""
+        return self.backbone_model.need_sorted_nlist_for_lower()
+
     def model_output_def(self):
         """Get the output def for the model."""
         model_output_type = self.backbone_model.model_output_type()
@@ -459,6 +471,7 @@ class SpinModel(torch.nn.Module):
         fparam: Optional[torch.Tensor] = None,
         aparam: Optional[torch.Tensor] = None,
         do_atomic_virial: bool = False,
+        extra_nlist_sort: bool = False,
     ):
         nframes, nloc = nlist.shape[:2]
         (
@@ -479,6 +492,7 @@ class SpinModel(torch.nn.Module):
             fparam=fparam,
             aparam=aparam,
             do_atomic_virial=do_atomic_virial,
+            extra_nlist_sort=extra_nlist_sort,
         )
         model_output_type = self.backbone_model.model_output_type()
         if "mask" in model_output_type:
@@ -603,6 +617,7 @@ class SpinEnergyModel(SpinModel):
             fparam=fparam,
             aparam=aparam,
             do_atomic_virial=do_atomic_virial,
+            extra_nlist_sort=self.backbone_model.need_sorted_nlist_for_lower(),
         )
         model_predict = {}
         model_predict["atom_energy"] = model_ret["energy"]

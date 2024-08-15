@@ -267,6 +267,7 @@ class BaseAtomicModel(torch.nn.Module, BaseAtomicModel_):
                     ret_dict[kk].reshape([out_shape[0], out_shape[1], -1])
                     * atom_mask[:, :, None]
                 ).view(out_shape)
+
         ret_dict["mask"] = atom_mask
 
         return ret_dict
