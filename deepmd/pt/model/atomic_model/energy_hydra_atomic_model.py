@@ -29,7 +29,7 @@ from deepmd.utils.version import (
 from .base_atomic_model import (
     BaseAtomicModel,
 )
-from collections import defaultdict
+import torch.nn as nn
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class EnergyHydraAtomicModel(BaseAtomicModel):
     def __init__(
         self,
         descriptor,
-        fitting_nets,
+        fitting_nets: List[BaseFitting],
         type_map: List[str],
         **kwargs,
     ):
@@ -64,7 +64,7 @@ class EnergyHydraAtomicModel(BaseAtomicModel):
         self.descriptor = descriptor
         self.rcut = self.descriptor.get_rcut()
         self.sel = self.descriptor.get_sel()
-        self.fitting_nets = fitting_nets
+        self.fitting_nets = nn.ModuleList(fitting_nets)
         self.fitting_net = fitting_nets[0]
         super().init_out_stat()
 
@@ -208,14 +208,14 @@ class EnergyHydraAtomicModel(BaseAtomicModel):
         h2s = [ts.squeeze(1) for ts in torch.split(h2, 1, dim=1)]
 
         # energy, force
-        hydra_ret = []
-        for n in range(n_hydra_layers):
-            hydra_ret.append(self.fitting_nets[n](descriptors[n], atype, gr=rot_mats[n], g2=g2s[n], h2=h2s[n], fparam=fparam, aparam=aparam))
+        hydra_ret : List[Dict[str,torch.Tensor]]= []
+        for idx, fitting in enumerate(self.fitting_nets):
+            hydra_ret.append(fitting(descriptors[idx], atype, gr=rot_mats[idx], g2=g2s[idx], h2=h2s[idx], fparam=fparam, aparam=aparam))
 
-        ret_dict = defaultdict(list)
+        ret_dict : Dict[str, List[torch.Tensor]] = {}
         for temp in hydra_ret:
             for k, v in temp.items():
-                ret_dict[k].append(v)
+                ret_dict[k] = ret_dict.get(k,[]).append(v)
         ret_dict = {k: torch.stack(v,dim=1) for k, v in ret_dict.items()}
 
         return ret_dict
