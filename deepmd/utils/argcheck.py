@@ -822,6 +822,84 @@ def descrpt_dpa2_args():
     ]
 
 
+
+@descrpt_args_plugin.register("hydradpa2", doc=doc_only_pt_supported)
+def descrpt_hydradpa2_args():
+    # repinit args
+    doc_repinit = "The arguments used to initialize the repinit block."
+    # repformer args
+    doc_repformer = "The arguments used to initialize the repformer block."
+    # descriptor args
+    doc_concat_output_tebd = (
+        "Whether to concat type embedding at the output of the descriptor."
+    )
+    doc_precision = f"The precision of the embedding net parameters, supported options are {list_to_doc(PRECISION_DICT.keys())} Default follows the interface precision."
+    doc_smooth = (
+        "Whether to use smoothness in processes such as attention weights calculation."
+    )
+    doc_exclude_types = "The excluded pairs of types which have no interaction with each other. For example, `[[0, 1]]` means no interaction between type 0 and type 1."
+    doc_env_protection = "Protection parameter to prevent division by zero errors during environment matrix calculations. For example, when using paddings, there may be zero distances of neighbors, which may make division by zero error during environment matrix calculations without protection."
+    doc_trainable = "If the parameters in the embedding net is trainable."
+    doc_seed = "Random seed for parameter initialization."
+    doc_add_tebd_to_repinit_out = "Add type embedding to the output representation from repinit before inputting it into repformer."
+    doc_use_econf_tebd = "Whether to use electronic configuration type embedding."
+    doc_use_tebd_bias = "Whether to use bias in the type embedding layer."
+    return [
+        # repinit args
+        Argument("repinit", dict, dpa2_repinit_args(), doc=doc_repinit),
+        # repformer args
+        Argument("repformer", dict, dpa2_repformer_args(), doc=doc_repformer),
+        # descriptor args
+        Argument(
+            "concat_output_tebd",
+            bool,
+            optional=True,
+            default=True,
+            doc=doc_concat_output_tebd,
+        ),
+        Argument("precision", str, optional=True, default="default", doc=doc_precision),
+        Argument("smooth", bool, optional=True, default=True, doc=doc_smooth),
+        Argument(
+            "exclude_types",
+            List[List[int]],
+            optional=True,
+            default=[],
+            doc=doc_exclude_types,
+        ),
+        Argument(
+            "env_protection",
+            float,
+            optional=True,
+            default=0.0,
+            doc=doc_only_pt_supported + doc_env_protection,
+        ),
+        Argument("trainable", bool, optional=True, default=True, doc=doc_trainable),
+        Argument("seed", [int, None], optional=True, doc=doc_seed),
+        Argument(
+            "add_tebd_to_repinit_out",
+            bool,
+            optional=True,
+            default=False,
+            alias=["repformer_add_type_ebd_to_seq"],
+            doc=doc_add_tebd_to_repinit_out,
+        ),
+        Argument(
+            "use_econf_tebd",
+            bool,
+            optional=True,
+            default=False,
+            doc=doc_only_pt_supported + doc_use_econf_tebd,
+        ),
+        Argument(
+            "use_tebd_bias",
+            bool,
+            optional=True,
+            default=False,
+            doc=doc_use_tebd_bias,
+        ),
+    ]
+
+
 # repinit for dpa2
 def dpa2_repinit_args():
     # repinit args
@@ -1980,6 +2058,128 @@ def loss_ener():
     ]
 
 
+@loss_args_plugin.register("hydra_ener")
+def loss_hydra_ener():
+    doc_start_pref_e = start_pref("energy", abbr="e")
+    doc_limit_pref_e = limit_pref("energy")
+    doc_start_pref_f = start_pref("force", abbr="f")
+    doc_limit_pref_f = limit_pref("force")
+    doc_start_pref_v = start_pref("virial", abbr="v")
+    doc_limit_pref_v = limit_pref("virial")
+    doc_start_pref_ae = start_pref("atomic energy", label="atom_ener", abbr="ae")
+    doc_limit_pref_ae = limit_pref("atomic energy")
+    doc_start_pref_pf = start_pref(
+        "atomic prefactor force", label="atom_pref", abbr="pf"
+    )
+    doc_limit_pref_pf = limit_pref("atomic prefactor force")
+    doc_start_pref_gf = start_pref("generalized force", label="drdq", abbr="gf")
+    doc_limit_pref_gf = limit_pref("generalized force")
+    doc_numb_generalized_coord = "The dimension of generalized coordinates. Required when generalized force loss is used."
+    doc_relative_f = "If provided, relative force error will be used in the loss. The difference of force will be normalized by the magnitude of the force in the label with a shift given by `relative_f`, i.e. DF_i / ( || F || + relative_f ) with DF denoting the difference between prediction and label and || F || denoting the L2 norm of the label."
+    doc_enable_atom_ener_coeff = "If true, the energy will be computed as \\sum_i c_i E_i. c_i should be provided by file atom_ener_coeff.npy in each data system, otherwise it's 1."
+    return [
+        Argument(
+            "start_pref_e",
+            [float, int],
+            optional=True,
+            default=0.02,
+            doc=doc_start_pref_e,
+        ),
+        Argument(
+            "limit_pref_e",
+            [float, int],
+            optional=True,
+            default=1.00,
+            doc=doc_limit_pref_e,
+        ),
+        Argument(
+            "start_pref_f",
+            [float, int],
+            optional=True,
+            default=1000,
+            doc=doc_start_pref_f,
+        ),
+        Argument(
+            "limit_pref_f",
+            [float, int],
+            optional=True,
+            default=1.00,
+            doc=doc_limit_pref_f,
+        ),
+        Argument(
+            "start_pref_v",
+            [float, int],
+            optional=True,
+            default=0.00,
+            doc=doc_start_pref_v,
+        ),
+        Argument(
+            "limit_pref_v",
+            [float, int],
+            optional=True,
+            default=0.00,
+            doc=doc_limit_pref_v,
+        ),
+        Argument(
+            "start_pref_ae",
+            [float, int],
+            optional=True,
+            default=0.00,
+            doc=doc_start_pref_ae,
+        ),
+        Argument(
+            "limit_pref_ae",
+            [float, int],
+            optional=True,
+            default=0.00,
+            doc=doc_limit_pref_ae,
+        ),
+        Argument(
+            "start_pref_pf",
+            [float, int],
+            optional=True,
+            default=0.00,
+            doc=doc_start_pref_pf,
+        ),
+        Argument(
+            "limit_pref_pf",
+            [float, int],
+            optional=True,
+            default=0.00,
+            doc=doc_limit_pref_pf,
+        ),
+        Argument("relative_f", [float, None], optional=True, doc=doc_relative_f),
+        Argument(
+            "enable_atom_ener_coeff",
+            [bool],
+            optional=True,
+            default=False,
+            doc=doc_enable_atom_ener_coeff,
+        ),
+        Argument(
+            "start_pref_gf",
+            float,
+            optional=True,
+            default=0.0,
+            doc=doc_start_pref_gf,
+        ),
+        Argument(
+            "limit_pref_gf",
+            float,
+            optional=True,
+            default=0.0,
+            doc=doc_limit_pref_gf,
+        ),
+        Argument(
+            "numb_generalized_coord",
+            int,
+            optional=True,
+            default=0,
+            doc=doc_numb_generalized_coord,
+        ),
+    ]
+
+
 @loss_args_plugin.register("ener_spin")
 def loss_ener_spin():
     doc_start_pref_e = start_pref("energy")
@@ -2666,7 +2866,7 @@ def gen_json_schema(multi_task: bool = False) -> str:
 def normalize(data, multi_task: bool = False):
     base = Argument("base", dict, gen_args(multi_task=multi_task))
     data = base.normalize_value(data, trim_pattern="_*")
-    base.check_value(data, strict=True)
+    base.check_value(data, strict=False)
 
     return data
 
