@@ -210,7 +210,7 @@ def get_hydra_model(model_params):
     hydra_layers = model_params["descriptor"]["hydra_layers"]
     descriptor = BaseDescriptor(**model_params["descriptor"])
     # fitting
-    fitting_net = model_params.get("fitting_nets", {})[0]
+    fitting_net = model_params.get("fitting_net", {})
     fitting_net["type"] = fitting_net.get("type", "ener")
     fitting_net["ntypes"] = descriptor.get_ntypes()
     fitting_net["type_map"] = copy.deepcopy(model_params["type_map"])
@@ -224,7 +224,7 @@ def get_hydra_model(model_params):
         if "ener" in fitting_net["type"]:
             fitting_net["return_energy"] = True
 
-    fitting_nets = [BaseFitting(**fitting_net) for _ in len(hydra_layers)]
+    fitting_nets = [BaseFitting(**fitting_net) for _ in range(len(hydra_layers))]
     atom_exclude_types = model_params.get("atom_exclude_types", [])
     pair_exclude_types = model_params.get("pair_exclude_types", [])
 
@@ -232,7 +232,7 @@ def get_hydra_model(model_params):
 
     model = HydraEnergyModel(
         descriptor=descriptor,
-        fitting=fitting_nets,
+        fitting_nets=fitting_nets,
         type_map=model_params["type_map"],
         atom_exclude_types=atom_exclude_types,
         pair_exclude_types=pair_exclude_types,
