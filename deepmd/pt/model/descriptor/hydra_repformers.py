@@ -503,7 +503,7 @@ class DescrptBlockHydraRepformers(DescriptorBlock):
                 nlist_mask,
                 sw,
             )
-            if idx in self.hydra_layers:
+            if idx + 1 in self.hydra_layers:
                 g1s.append(g1)
                 g2s.append(g2)
                 h2s.append(h2)

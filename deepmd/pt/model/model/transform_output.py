@@ -214,13 +214,22 @@ def communicate_extended_output(
                     vldims + derv_r_ext_dims, dtype=vv.dtype, device=vv.device
                 )
                 # nf x nloc x nvar x 3
-                new_ret[kk_derv_r] = torch.scatter_reduce(
-                    force,
-                    1,
-                    index=mapping,
-                    src=model_ret[kk_derv_r],
-                    reduce="sum",
-                )
+                if len(force.shape) == 5:
+                    new_ret[kk_derv_r] = torch.scatter_reduce(
+                        force,
+                        2,
+                        index=mapping.unsqueeze(1).expand(-1, force.shape[1],-1,-1,-1),
+                        src=model_ret[kk_derv_r].unsqueeze(1).expand(-1, force.shape[1],-1,-1,-1),
+                        reduce="sum",
+                    )
+                else:
+                    new_ret[kk_derv_r] = torch.scatter_reduce(
+                        force,
+                        1,
+                        index=mapping,
+                        src=model_ret[kk_derv_r],
+                        reduce="sum",
+                    )
             if vdef.c_differentiable:
                 assert vdef.r_differentiable
                 derv_c_ext_dims = list(vdef.shape) + [9]  # noqa:RUF005
@@ -232,14 +241,23 @@ def communicate_extended_output(
                 virial = torch.zeros(
                     vldims + derv_c_ext_dims, dtype=vv.dtype, device=vv.device
                 )
-                # nf x nloc x nvar x 9
-                new_ret[kk_derv_c] = torch.scatter_reduce(
-                    virial,
-                    1,
-                    index=mapping,
-                    src=model_ret[kk_derv_c],
-                    reduce="sum",
-                )
+                if len(virial.shape) == 5:
+                    # nf x nloc x nvar x 9
+                    new_ret[kk_derv_c] = torch.scatter_reduce(
+                        virial,
+                        2,
+                        index=mapping.unsqueeze(1).expand(-1, virial.shape[1],-1,-1,-1),
+                        src=model_ret[kk_derv_c].unsqueeze(1).expand(-1, virial.shape[1],-1,-1,-1),
+                        reduce="sum",
+                    )
+                else:
+                    new_ret[kk_derv_c] = torch.scatter_reduce(
+                        virial,
+                        1,
+                        index=mapping,
+                        src=model_ret[kk_derv_c],
+                        reduce="sum",
+                    )
                 new_ret[kk_derv_c + "_redu"] = torch.sum(
                     new_ret[kk_derv_c].to(redu_prec), dim=1
                 )

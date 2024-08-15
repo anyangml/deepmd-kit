@@ -29,6 +29,7 @@ from deepmd.utils.version import (
 from .base_atomic_model import (
     BaseAtomicModel,
 )
+from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
@@ -201,17 +202,23 @@ class EnergyHydraAtomicModel(BaseAtomicModel):
         n_hydra_layers = descriptor.shape[1]
         assert  n_hydra_layers == len(self.fitting_nets), "Hydra Model descriptor size and # of fitting nets mismatch"
         
-        descriptors = torch.split(descriptor, 1, dim=1)
-        rot_mats = torch.split(rot_mat, 1, dim=1)
-        g2s = torch.split(g2, 1, dim=1)
-        h2s = torch.split(h2, 1, dim=1)
+        descriptors = [ts.squeeze(1) for ts in torch.split(descriptor, 1, dim=1)]
+        rot_mats = [ts.squeeze(1) for ts in torch.split(rot_mat, 1, dim=1)]
+        g2s = [ts.squeeze(1) for ts in torch.split(g2, 1, dim=1)]
+        h2s = [ts.squeeze(1) for ts in torch.split(h2, 1, dim=1)]
 
         # energy, force
         hydra_ret = []
         for n in range(n_hydra_layers):
             hydra_ret.append(self.fitting_nets[n](descriptors[n], atype, gr=rot_mats[n], g2=g2s[n], h2=h2s[n], fparam=fparam, aparam=aparam))
-        
-        return torch.stack(hydra_ret, dim=1)
+
+        ret_dict = defaultdict(list)
+        for temp in hydra_ret:
+            for k, v in temp.items():
+                ret_dict[k].append(v)
+        ret_dict = {k: torch.stack(v,dim=1) for k, v in ret_dict.items()}
+
+        return ret_dict
 
     def get_out_bias(self) -> torch.Tensor:
         return self.out_bias

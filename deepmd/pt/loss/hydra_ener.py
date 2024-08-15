@@ -221,7 +221,7 @@ class HydraEnergyStdLoss(TaskLoss):
             find_force = label.get("find_force", 0.0)
             pref_f = pref_f * find_force
             force_pred = model_pred["force"]
-            force_label = label["force"].unsqueeze(1).expand(-1,len(self.hydra_layers) ,-1)
+            force_label = label["force"].unsqueeze(1).expand(-1,len(self.hydra_layers) ,-1, -1)
             diff_f = (force_label - force_pred).reshape(-1)
 
             if self.relative_f is not None:

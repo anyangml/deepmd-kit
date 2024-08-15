@@ -653,8 +653,11 @@ class DescrptHydraDPA2(BaseDescriptor, torch.nn.Module):
             mapping,
             comm_dict,
         )
+        
         if self.concat_output_tebd:
+            g1_inp = g1_inp.unsqueeze(1).expand(-1,g1.shape[1],-1,-1)
             g1 = torch.cat([g1, g1_inp], dim=-1)
+            
         return g1, rot_mat, g2, h2, sw
 
     @classmethod
