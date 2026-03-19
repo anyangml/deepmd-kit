@@ -609,6 +609,11 @@ def grad_probe(FLAGS) -> None:
                     f_label = label_dict["force"]
                     # Force MAE
                     loss += torch.mean(torch.abs(f_pred - f_label))
+                if "virial" in model_pred and "virial" in label_dict:
+                    v_pred = model_pred["virial"].reshape(-1, 9)
+                    v_label = label_dict["virial"]
+                    # Normalized Virial MAE: 1/N * mean(|V_pred - V_label|)
+                    loss += torch.mean(torch.abs(v_pred - v_label)) / natoms
             else:
                 # Default behavior
                 _, loss, _ = trainer.wrapper(
