@@ -252,14 +252,21 @@ def _trace_and_compile(
         # garbage shape values and raises e.g.
         #   RuntimeError: shape '[<garbage>, <garbage>, 128]'
         #                 is invalid for input of size 128
-        # (torch 2.11, pytorch/pytorch#174379-class lifetime bug).
-        # ``clone`` materialises each output as a fresh tensor with its own
-        # storage so AOTAutograd no longer emits the alias replay path for
-        # it.  ``contiguous`` is *not* sufficient here: a ``squeeze`` view of
-        # a contiguous tensor is itself contiguous, so ``contiguous()`` would
-        # return ``self`` (still a view) without breaking the alias.
+        # (torch 2.11 lifetime bug).  ``clone`` materialises a fresh tensor
+        # with its own storage so AOTAutograd no longer takes the alias-
+        # replay path for it.
+        #
+        # Only clone tensors that are *actually* views (``t._base is not
+        # None``).  Non-view outputs (``atom_energy``, ``energy``, ``mask``,
+        # ...) never trigger AOT's alias path, so cloning them would just
+        # add GPU memory pressure for no benefit — and avoiding extra GPU
+        # memory footprint is the whole point of this PR.  ``contiguous``
+        # is also not a substitute: a ``squeeze`` view of a contiguous
+        # tensor is itself contiguous and ``contiguous()`` returns ``self``
+        # (still a view).
         return {
-            k: v.clone() if isinstance(v, torch.Tensor) else v for k, v in out.items()
+            k: (v.clone() if isinstance(v, torch.Tensor) and v._base is not None else v)
+            for k, v in out.items()
         }
 
     # Pick a trace-time nframes that's unlikely to collide with any other
