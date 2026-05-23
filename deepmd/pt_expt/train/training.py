@@ -233,7 +233,7 @@ def _trace_and_compile(
         aparam: torch.Tensor | None,
     ) -> dict[str, torch.Tensor]:
         extended_coord = extended_coord.detach().requires_grad_(True)
-        return model.forward_lower(
+        out = model.forward_lower(
             extended_coord,
             extended_atype,
             nlist,
@@ -241,6 +241,26 @@ def _trace_and_compile(
             fparam=fparam,
             aparam=aparam,
         )
+        # Break view aliasing on outputs.  ``forward_lower`` returns several
+        # view tensors (e.g. ``extended_force = energy_derv_r.squeeze(-2)``).
+        # When this graph is later AOT-traced by ``torch.compile`` with
+        # ``dynamic=True``, AOTAutograd treats those views as output aliases
+        # of an internal base and emits a ``ViewMeta`` sequence parameterised
+        # by SymInts.  Those SymInts are replayed at runtime via
+        # ``apply_view_meta_sequence`` — and if their backing ``SymNode``
+        # Python objects are GC'd between trace and run, the C++ side reads
+        # garbage shape values and raises e.g.
+        #   RuntimeError: shape '[<garbage>, <garbage>, 128]'
+        #                 is invalid for input of size 128
+        # (torch 2.11, pytorch/pytorch#174379-class lifetime bug).
+        # ``clone`` materialises each output as a fresh tensor with its own
+        # storage so AOTAutograd no longer emits the alias replay path for
+        # it.  ``contiguous`` is *not* sufficient here: a ``squeeze`` view of
+        # a contiguous tensor is itself contiguous, so ``contiguous()`` would
+        # return ``self`` (still a view) without breaking the alias.
+        return {
+            k: v.clone() if isinstance(v, torch.Tensor) else v for k, v in out.items()
+        }
 
     # Pick a trace-time nframes that's unlikely to collide with any other
     # tensor dim in the graph.  The symbolic tracer merges symbols that
