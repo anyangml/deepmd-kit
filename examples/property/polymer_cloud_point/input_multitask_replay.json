@@ -1,0 +1,263 @@
+{
+  "_comment": "Multitask finetune: polymer cloud-point (polymer_pool head) + an ENERGY REPLAY branch, both sharing the pretrained DPA-3.3 descriptor so finetuning the descriptor on 591 polymers does not forget its physics. Fill the energy branch's data path + finetune_head. See README.",
+  "model": {
+    "shared_dict": {
+      "type_map_all": [
+        "H",
+        "He",
+        "Li",
+        "Be",
+        "B",
+        "C",
+        "N",
+        "O",
+        "F",
+        "Ne",
+        "Na",
+        "Mg",
+        "Al",
+        "Si",
+        "P",
+        "S",
+        "Cl",
+        "Ar",
+        "K",
+        "Ca",
+        "Sc",
+        "Ti",
+        "V",
+        "Cr",
+        "Mn",
+        "Fe",
+        "Co",
+        "Ni",
+        "Cu",
+        "Zn",
+        "Ga",
+        "Ge",
+        "As",
+        "Se",
+        "Br",
+        "Kr",
+        "Rb",
+        "Sr",
+        "Y",
+        "Zr",
+        "Nb",
+        "Mo",
+        "Tc",
+        "Ru",
+        "Rh",
+        "Pd",
+        "Ag",
+        "Cd",
+        "In",
+        "Sn",
+        "Sb",
+        "Te",
+        "I",
+        "Xe",
+        "Cs",
+        "Ba",
+        "La",
+        "Ce",
+        "Pr",
+        "Nd",
+        "Pm",
+        "Sm",
+        "Eu",
+        "Gd",
+        "Tb",
+        "Dy",
+        "Ho",
+        "Er",
+        "Tm",
+        "Yb",
+        "Lu",
+        "Hf",
+        "Ta",
+        "W",
+        "Re",
+        "Os",
+        "Ir",
+        "Pt",
+        "Au",
+        "Hg",
+        "Tl",
+        "Pb",
+        "Bi",
+        "Po",
+        "At",
+        "Rn",
+        "Fr",
+        "Ra",
+        "Ac",
+        "Th",
+        "Pa",
+        "U",
+        "Np",
+        "Pu",
+        "Am",
+        "Cm",
+        "Bk",
+        "Cf",
+        "Es",
+        "Fm",
+        "Md",
+        "No",
+        "Lr",
+        "Rf",
+        "Db",
+        "Sg",
+        "Bh",
+        "Hs",
+        "Mt",
+        "Ds",
+        "Rg",
+        "Cn",
+        "Nh",
+        "Fl",
+        "Mc",
+        "Lv",
+        "Ts",
+        "Og"
+      ],
+      "dpa3_descriptor": {
+        "type": "dpa3",
+        "repflow": {
+          "n_dim": 128,
+          "e_dim": 64,
+          "a_dim": 32,
+          "nlayers": 16,
+          "e_rcut": 6.0,
+          "e_rcut_smth": 5.3,
+          "e_sel": 1200,
+          "a_rcut": 4.0,
+          "a_rcut_smth": 3.5,
+          "a_sel": 300,
+          "axis_neuron": 4,
+          "skip_stat": true,
+          "a_compress_rate": 1,
+          "a_compress_e_rate": 2,
+          "a_compress_use_split": true,
+          "update_angle": true,
+          "smooth_edge_update": true,
+          "use_dynamic_sel": true,
+          "sel_reduce_factor": 10.0,
+          "use_env_envelope": true,
+          "update_style": "res_residual",
+          "update_residual": 0.1,
+          "update_residual_init": "const"
+        },
+        "activation_function": "custom_silu:3.0",
+        "precision": "float32",
+        "use_tebd_bias": false,
+        "concat_output_tebd": false
+      }
+    },
+    "model_dict": {
+      "polymer": {
+        "type_map": "type_map_all",
+        "descriptor": "dpa3_descriptor",
+        "fitting_net": {
+          "type": "polymer_pool",
+          "property_name": "cloud_point",
+          "task_dim": 1,
+          "intensive": true,
+          "n_roles": 2,
+          "numb_fparam": 38,
+          "numb_aparam": 3,
+          "head_neuron": [
+            256,
+            256
+          ],
+          "head_activation": "silu",
+          "pool_norm": "layer",
+          "seed": 1
+        },
+        "_comment": "NEW head -> no finetune_head -> re-init fresh; inherits shared descriptor"
+      },
+      "energy": {
+        "type_map": "type_map_all",
+        "descriptor": "dpa3_descriptor",
+        "fitting_net": {
+          "type": "ener",
+          "neuron": [
+            240,
+            240,
+            240
+          ],
+          "dim_case_embd": 23,
+          "seed": 1
+        },
+        "finetune_head": "OMol25",
+        "_comment": "REPLAY: finetune_head names the pretrained branch whose energy fitting is resumed; must match the branch your replay data came from. With --use-pretrain-script the fitting_net here is overwritten by that branch's config."
+      }
+    }
+  },
+  "learning_rate": {
+    "type": "exp",
+    "start_lr": 0.0002,
+    "stop_lr": 1e-05,
+    "decay_steps": 2000,
+    "_comment": "single global lr; keep low so the shared descriptor is not wrecked"
+  },
+  "loss_dict": {
+    "polymer": {
+      "type": "property",
+      "loss_func": "smooth_mae",
+      "beta": 1.0,
+      "metric": [
+        "mae",
+        "rmse"
+      ]
+    },
+    "energy": {
+      "type": "ener",
+      "start_pref_e": 0.02,
+      "limit_pref_e": 1,
+      "start_pref_f": 1000,
+      "limit_pref_f": 1,
+      "start_pref_v": 0,
+      "limit_pref_v": 0
+    }
+  },
+  "training": {
+    "model_prob": {
+      "polymer": 0.7,
+      "energy": 0.3,
+      "_comment": "fraction of steps per branch; more energy = stronger anchor"
+    },
+    "data_dict": {
+      "polymer": {
+        "training_data": {
+          "systems": [
+            "PATH/TO/dpdata_polymer/train"
+          ],
+          "batch_size": 1
+        },
+        "validation_data": {
+          "systems": [
+            "PATH/TO/dpdata_polymer/val"
+          ],
+          "batch_size": 1
+        }
+      },
+      "energy": {
+        "training_data": {
+          "systems": [
+            "PATH/TO/energy_replay"
+          ],
+          "batch_size": "auto"
+        },
+        "_comment": "a few-thousand-frame OMat24/MPTrj-style subset with energy+force"
+      }
+    },
+    "numb_steps": 200000,
+    "gradient_max_norm": 5.0,
+    "seed": 10,
+    "disp_file": "lcurve.out",
+    "disp_freq": 200,
+    "save_freq": 5000
+  }
+}

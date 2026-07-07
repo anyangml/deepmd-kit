@@ -74,6 +74,42 @@ The split reuses the agreed OOD label-tail split (train 591 / val 104 / low 72 /
 high 72). Compare against the reference `group_property_e2e.py` (embedding-pool head
 + same split) to check reproduction before moving to multitask + energy replay.
 
+## Multitask + energy replay
+
+`input_multitask_replay.json` co-trains two branches on the **shared** DPA-3.3
+descriptor: `polymer` (our `polymer_pool` head, the cloud-point data) and `energy`
+(a native `ener` head on an energy+force **replay** set). Replaying energy keeps the
+descriptor from forgetting its pretrained physics when it is finetuned on only ~591
+polymers.
+
+Fill in before running:
+- `training.data_dict.energy.training_data.systems` → your energy replay set
+  (a few-thousand-frame OMat24 / MPTrj-style subset with `energy.npy` + `force.npy`).
+- `model_dict.energy.finetune_head` → the pretrained branch that replay data came
+  from (e.g. `OMol25`); its energy fitting is resumed. The `polymer` branch has no
+  `finetune_head`, so its head is re-initialised fresh while inheriting the descriptor.
+- `training.model_prob` → step fraction per branch (more `energy` = stronger anchor).
+
+Run (multitask finetune from the multitask checkpoint):
+```bash
+dp --pt train input_multitask_replay.json \
+   --finetune /path/to/model.ckpt-6860000.pt --use-pretrain-script
+```
+Validate exactly as single-task: freeze, then `dp --pt test` the `polymer` branch on
+`test_low` / `test_high`, and compare to the single-task e2e numbers — if energy
+replay helped, the OOD tails improve (or IND holds while the descriptor stays
+physical).
+
+## Parity plots
+
+`plot_ckpt_parity.py` (in the polymer project) evaluates a frozen model on every
+system and draws predicted-vs-true, IND (train/val) vs OOD (low/high) colour-coded:
+```bash
+dp --pt freeze -o e2e.pth
+python plot_ckpt_parity.py --data dpdata_polymer --model e2e.pth:e2e
+# or compare arms: --model frozen.pth:frozen --model e2e.pth:e2e
+```
+
 ## Notes
 
 - `pool_norm: layer` (default) because one-frame-per-system means one frame per step
