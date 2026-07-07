@@ -60,9 +60,6 @@ from deepmd.pt.model.task.fitting import (
 from deepmd.pt.model.task.property import (
     PropertyFittingNet,
 )
-from deepmd.pt.utils import (
-    env,
-)
 from deepmd.pt.utils.env import (
     DEFAULT_PRECISION,
 )
@@ -105,6 +102,11 @@ class PolymerPoolFitting(PropertyFittingNet):
         numb_aparam: int = 0,
         precision: str = DEFAULT_PRECISION,
         seed: int | None = None,
+        # captured from the fitting dict the standard-model builder injects
+        # (descriptor.mixed_types(), etc.) so they do not collide with the values
+        # we pass to super().
+        mixed_types: bool = True,
+        distinguish_types: bool = False,
         **kwargs: Any,
     ) -> None:
         # aparam carries [w, role0, ..., role_{n_roles-1}]
@@ -129,7 +131,7 @@ class PolymerPoolFitting(PropertyFittingNet):
             numb_aparam=numb_aparam,
             precision=precision,
             seed=seed,
-            mixed_types=True,
+            mixed_types=mixed_types,
             distinguish_types=False,
             **kwargs,
         )
@@ -138,7 +140,7 @@ class PolymerPoolFitting(PropertyFittingNet):
         self.head_activation = str(head_activation)
         self.head_dropout = float(head_dropout)
         self.pool_norm = str(pool_norm)
-        self.prec = env.PRECISION_DICT[precision]
+        # self.prec is resolved by GeneralFitting.__init__ (handles "default")
 
         pooled_dim = self.n_roles * dim_descrpt
         if self.pool_norm == "layer":
