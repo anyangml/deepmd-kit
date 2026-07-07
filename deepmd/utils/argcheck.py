@@ -2812,6 +2812,23 @@ def fitting_polymer_pool() -> list[Argument]:
         Argument("intensive", bool, optional=True, default=True, doc=doc_intensive),
         Argument("precision", str, optional=True, default="default", doc=doc_precision),
         Argument("seed", [int, None], optional=True, doc=doc_seed),
+        Argument(
+            "dim_case_embd",
+            int,
+            optional=True,
+            default=0,
+            doc=doc_only_pt_supported
+            + "Dimension of the case embedding for multitask training.",
+        ),
+        Argument(
+            "trainable",
+            [list[bool], bool],
+            optional=True,
+            default=True,
+            doc="Whether the fitting parameters are trainable (the pooled head is "
+            "always trained; freeze the descriptor via `descriptor.trainable`). "
+            "Injected by the finetune machinery, so it must be accepted here.",
+        ),
     ]
 
 
