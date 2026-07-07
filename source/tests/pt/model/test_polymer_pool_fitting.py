@@ -15,12 +15,11 @@ import torch
 from deepmd.pt.model.task.polymer_pool import (
     PolymerPoolFitting,
 )
-from deepmd.pt.utils import (
-    env,
-)
 
 dtype = torch.float64
-device = env.DEVICE
+# The pooling/broadcast logic is device-agnostic; pin to CPU so the test does not
+# depend on a working CUDA/driver stack (and stays fast in CI).
+device = torch.device("cpu")
 
 
 def _make(nr=2, D=8, Fdim=3, task_dim=1):
