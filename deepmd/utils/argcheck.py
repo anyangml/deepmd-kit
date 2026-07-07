@@ -2776,6 +2776,45 @@ def fitting_property() -> list[Argument]:
     ]
 
 
+@fitting_args_plugin.register("polymer_pool", doc=doc_only_pt_supported)
+def fitting_polymer_pool() -> list[Argument]:
+    doc_numb_fparam = "The dimension of the frame (process) parameter, PRE-STANDARDIZED in the data. If >0, `fparam.npy` must be provided; it is concatenated to the pooled embedding before the head."
+    doc_numb_aparam = "The dimension of the atomic parameter; MUST equal n_roles+1. aparam layout is [w, *role_onehot(n_roles)] where w is the raw per-atom pooling weight. `aparam.npy` must be provided."
+    doc_property_name = "The name of the fitting property, consistent with the label file name in the dataset (e.g. `cloud_point`)."
+    doc_task_dim = "The dimension of outputs of the fitting head."
+    doc_n_roles = "Number of fragment roles pooled into separate channels (2 = end group / repeating unit)."
+    doc_head_neuron = "Hidden widths of the readout head mapping [norm(pooled_embedding) ; fparam] -> task."
+    doc_head_activation = "Head activation function (silu | gelu | relu | tanh)."
+    doc_head_dropout = "Dropout probability in the head."
+    doc_pool_norm = "Normalization of the pooled embedding: `layer` (default, batch-independent — use with one-frame-per-system data), `batch`, or `none`."
+    doc_precision = f"The precision of the fitting parameters, supported options are {list_to_doc(PRECISION_DICT.keys())} Default follows the interface precision."
+    doc_seed = "Random seed for parameter initialization of the fitting net."
+    doc_intensive = "Must be true: the frame prediction is broadcast to every atom and recovered by the intensive mean atom-reduce."
+    return [
+        Argument("numb_fparam", int, optional=True, default=0, doc=doc_numb_fparam),
+        Argument("numb_aparam", int, optional=True, default=0, doc=doc_numb_aparam),
+        Argument("property_name", str, optional=False, doc=doc_property_name),
+        Argument("task_dim", int, optional=True, default=1, doc=doc_task_dim),
+        Argument("n_roles", int, optional=True, default=2, doc=doc_n_roles),
+        Argument(
+            "head_neuron",
+            list[int],
+            optional=True,
+            default=[256, 256],
+            doc=doc_head_neuron,
+        ),
+        Argument(
+            "head_activation", str, optional=True, default="silu",
+            doc=doc_head_activation,
+        ),
+        Argument("head_dropout", float, optional=True, default=0.1, doc=doc_head_dropout),
+        Argument("pool_norm", str, optional=True, default="layer", doc=doc_pool_norm),
+        Argument("intensive", bool, optional=True, default=True, doc=doc_intensive),
+        Argument("precision", str, optional=True, default="default", doc=doc_precision),
+        Argument("seed", [int, None], optional=True, doc=doc_seed),
+    ]
+
+
 @fitting_args_plugin.register("polar", doc=doc_polar)
 def fitting_polar() -> list[Argument]:
     doc_numb_fparam = "The dimension of the frame parameter. If set to >0, file `fparam.npy` should be included to provided the input fparams."
