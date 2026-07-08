@@ -90,6 +90,13 @@ Fill in before running:
   `finetune_head`, so its head is re-initialised fresh while inheriting the descriptor.
 - `training.model_prob` → step fraction per branch (more `energy` = stronger anchor).
 
+**Case embedding:** all branches must declare the *same* `fitting_net.dim_case_embd`.
+The pretrained energy fitting uses `23`, so the `polymer` branch declares `23` too —
+`polymer_pool` ignores the case embedding in its forward, and because finetune counts
+as *resuming*, `set_case_embd` is skipped so the energy branch keeps OMol25's own case
+embedding. (Mismatch → `ValueError: All models must have the same dimension of case
+embedding`.)
+
 Run (multitask finetune from the multitask checkpoint):
 ```bash
 dp --pt train input_multitask_replay.json \

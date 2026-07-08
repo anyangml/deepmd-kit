@@ -173,7 +173,9 @@
           ],
           "head_activation": "silu",
           "pool_norm": "layer",
-          "seed": 1
+          "seed": 1,
+          "dim_case_embd": 23,
+          "_comment": "dim_case_embd=23 only to match the energy branch's case-embd dim (required: all branches equal). polymer_pool's forward ignores the case embedding; finetune is 'resuming' so set_case_embd is skipped."
         },
         "_comment": "NEW head -> no finetune_head -> re-init fresh; inherits shared descriptor"
       },
