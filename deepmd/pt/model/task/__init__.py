@@ -21,6 +21,9 @@ from .fitting import (
 from .polarizability import (
     PolarFittingNet,
 )
+from .polymer_additive import (
+    PolymerAdditiveFitting,
+)
 from .polymer_pool import (
     PolymerPoolFitting,
 )
@@ -46,6 +49,7 @@ __all__ = [
     "EnergyFittingNetDirect",
     "Fitting",
     "PolarFittingNet",
+    "PolymerAdditiveFitting",
     "PolymerPoolFitting",
     "PopulationFittingNet",
     "PropertyFittingNet",

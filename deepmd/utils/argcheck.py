@@ -2832,6 +2832,62 @@ def fitting_polymer_pool() -> list[Argument]:
     ]
 
 
+@fitting_args_plugin.register("polymer_additive", doc=doc_only_pt_supported)
+def fitting_polymer_additive() -> list[Argument]:
+    doc_numb_fparam = "The dimension of the frame (process) parameter, PRE-STANDARDIZED in the data. If >0, `fparam.npy` must be provided; it is concatenated to each atom's descriptor before the per-atom projection."
+    doc_numb_aparam = "The dimension of the atomic parameter; MUST equal n_roles+1, matching `polymer_pool` so one dataset feeds both. aparam layout is [w, *role_onehot(n_roles)]; only `w` (the raw per-atom pooling weight) is used — the role one-hot is ignored by the additive form. `aparam.npy` must be provided."
+    doc_property_name = "The name of the fitting property, consistent with the label file name in the dataset (e.g. `cloud_point`)."
+    doc_task_dim = "The dimension of outputs of the fitting net."
+    doc_n_roles = "Number of fragment roles in the aparam layout (2 = end group / repeating unit). Only validates numb_aparam == n_roles+1; unused in the forward."
+    doc_neuron = "The number of neurons in each hidden layer of the per-atom fitting net. When two hidden layers are of the same size, a skip connection is built."
+    doc_activation_function = f"The activation function in the fitting net. Supported activation functions are {list_to_doc(ACTIVATION_FN_DICT.keys())}"
+    doc_resnet_dt = 'Whether to use a "Timestep" in the skip connection'
+    doc_precision = f"The precision of the fitting parameters, supported options are {list_to_doc(PRECISION_DICT.keys())} Default follows the interface precision."
+    doc_seed = "Random seed for parameter initialization of the fitting net."
+    doc_intensive = "Must be true: the per-atom output is scaled by nloc*w and the frame value Sum_i w_i*y_i is recovered by the intensive mean atom-reduce. (false would sum correctly but makes the property loss divide pred/label by natoms.)"
+    return [
+        Argument("numb_fparam", int, optional=True, default=0, doc=doc_numb_fparam),
+        Argument("numb_aparam", int, optional=True, default=0, doc=doc_numb_aparam),
+        Argument("property_name", str, optional=False, doc=doc_property_name),
+        Argument("task_dim", int, optional=True, default=1, doc=doc_task_dim),
+        Argument("n_roles", int, optional=True, default=2, doc=doc_n_roles),
+        Argument(
+            "neuron",
+            list[int],
+            optional=True,
+            default=[128, 128, 128],
+            doc=doc_neuron,
+        ),
+        Argument(
+            "activation_function",
+            str,
+            optional=True,
+            default="tanh",
+            doc=doc_activation_function,
+        ),
+        Argument("resnet_dt", bool, optional=True, default=True, doc=doc_resnet_dt),
+        Argument("intensive", bool, optional=True, default=True, doc=doc_intensive),
+        Argument("precision", str, optional=True, default="default", doc=doc_precision),
+        Argument("seed", [int, None], optional=True, doc=doc_seed),
+        Argument(
+            "dim_case_embd",
+            int,
+            optional=True,
+            default=0,
+            doc=doc_only_pt_supported
+            + "Dimension of the case embedding for multitask training.",
+        ),
+        Argument(
+            "trainable",
+            [list[bool], bool],
+            optional=True,
+            default=True,
+            doc="Whether the fitting parameters are trainable. "
+            "Injected by the finetune machinery, so it must be accepted here.",
+        ),
+    ]
+
+
 @fitting_args_plugin.register("polar", doc=doc_polar)
 def fitting_polar() -> list[Argument]:
     doc_numb_fparam = "The dimension of the frame parameter. If set to >0, file `fparam.npy` should be included to provided the input fparams."
