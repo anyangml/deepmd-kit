@@ -190,7 +190,9 @@ def _compute_model_predict(
         coord, atype, box = (
             system["coord"],
             system["atype"],
-            system["box"],
+            # nopbc systems (e.g. molecular energy data like OMol/SPICE) carry no
+            # box; pass None like fparam/aparam below so the output-bias stat works.
+            system.get("box", None),
         )
         fparam = system.get("fparam", None)
         aparam = system.get("aparam", None)

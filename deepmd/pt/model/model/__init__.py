@@ -353,7 +353,12 @@ def get_standard_model(model_params: dict) -> BaseModel:
         modelcls = DOSModel
     elif fitting_net_type in ["ener", "direct_force_ener"]:
         modelcls = EnergyModel
-    elif fitting_net_type == "property":
+    elif fitting_net_type in ["property", "polymer_pool", "polymer_additive"]:
+        # polymer_pool is a PropertyFittingNet subclass (pools per-fragment
+        # embeddings then broadcasts the frame prediction to every atom), so it
+        # uses the standard property model / intensive reduce / property loss.
+        # polymer_additive is its additive ablation (per-atom projection scaled by
+        # nloc·w, recovered by the same intensive mean-reduce), so it routes here too.
         modelcls = PropertyModel
     elif fitting_net_type == "population":
         modelcls = PopulationModel
